@@ -95,7 +95,7 @@ contract TestRaffle is Test {
 
         //Act//assert
 
-        vm.expectRevert(Raffle.Raffle__NotEnoughETHSent.selector);
+        vm.expectRevert(Raffle.Raffel_StateNotOpen.selector);
         vm.prank(PLAYER);
         raffle.enterRaffle{value: entranceFee}();
         

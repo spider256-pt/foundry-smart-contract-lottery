@@ -6,15 +6,16 @@ pragma solidity ^0.8.18;
 
 import {Script, console} from "forge-std/Script.sol";
 import {VRFCoordinatorV2Mock} from "@chainlink/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2Mock.sol";
-import {HelperConfig} from "../script/HelperConfig.s.sol";
-import {CodeConstants} from "../script/HelperConfig.s.sol";
+import {HelperConfig,CodeConstants} from "../script/HelperConfig.s.sol";
 import {LinkToken} from "test/mocks/linkToken.sol";
+import {DevOpsTools} from "lib/foundry-devops/src/DevOpsTools.sol";
 
 contract CreateSubscription is Script {
 
     function createSubscriptionUsingConfig() public returns(uint64) {
 
         HelperConfig helperConfig = new HelperConfig();
+
     
         uint256 subsrciptionId = helperConfig.getConfig().subscriptionId;
         address vrfCoodinator = helperConfig.getConfig().vrfCoodinator;
@@ -68,21 +69,38 @@ contract FundSubscription is Script, CodeConstants{
         console.log("Using VRFCoodinator", vrfCoodinator);
         console.log("On chainId", block.chainid);
 
-        if(block.chainid == ETH_SEPOLIA_CHAIN_ID){
+        // if(block.chainid == ETH_SEPOLIA_CHAIN_ID){
+        //     vm.startBroadcast();
+
+        //     VRFCoordinatorV2Mock(vrfCoodinator).fundSubscription(uint64(subScriptionId), uint96(FUND_AMOUNT));
+
+        //     vm.stopBroadcast();
+        // }else{
+        //     console.log(LinkToken(linkToken).balanceOf(msg.sender));
+        //     console.log(msg.sender);
+        //     console.log(LinkToken(linkToken).balanceOf(address(this)));
+        //     console.log(address(this));
+        //     vm.startBroadcast();
+        //     LinkToken(linkToken).transferAndCall(vrfCoodinator, FUND_AMOUNT, abi.encode(subScriptionId));
+        //     vm.stopBroadcast();
+        // }
+
+        if(block.chainid == LOCAL_CHAIN_ID){
             vm.startBroadcast();
-
-            VRFCoordinatorV2Mock(vrfCoodinator).fundSubscription(uint64(subScriptionId), uint96(FUND_AMOUNT));
-
+            // Mock cheatcode
+            VRFCoordinatorV2Mock(vrfCoodinator).fundSubscription(uint64(subScriptionId), uint96(FUND_AMOUNT)); 
             vm.stopBroadcast();
-        }else{
-            console.log(LinkToken(linkToken).balanceOf(msg.sender));
-            console.log(msg.sender);
-            console.log(LinkToken(linkToken).balanceOf(address(this)));
-            console.log(address(this));
+        } else {
             vm.startBroadcast();
+            // Real ERC677 transfer
             LinkToken(linkToken).transferAndCall(vrfCoodinator, FUND_AMOUNT, abi.encode(subScriptionId));
             vm.stopBroadcast();
         }
+
+
+
+
+
     }
 
     
@@ -90,4 +108,35 @@ contract FundSubscription is Script, CodeConstants{
     function run() external {
         fundSubscriptionUsingConfig();
     }
+}
+
+
+contract AddConsumer is Script{
+
+    function addConsumer(address raffle, address vrfCoodinator, uint256 subscriptionId) public {
+        console.log("Adding consumer contract: ", raffle);
+        console.log("Using VrfCoodinator:", vrfCoodinator);
+        console.log("On chain Id:", block.chainid);
+
+
+        vm.startBroadcast();
+        VRFCoordinatorV2Mock(vrfCoodinator).addConsumer(uint64(subscriptionId), raffle);
+        vm.stopBroadcast();
+    }
+
+    function addConsumerUsingConfig(address raffle) public {
+        HelperConfig helperconfig = new HelperConfig();
+        HelperConfig.NetworkConfig memory config = helperconfig.getConfig();
+
+        address vrfCoodinator = config.vrfCoodinator;
+        uint64 subscriptionId = config.subscriptionId;
+        addConsumer(raffle, vrfCoodinator, subscriptionId);
+        
+    }
+
+    function run() external {
+        address raffle = DevOpsTools.get_most_recent_deployment("MyContract: ", block.chainid);
+        addConsumerUsingConfig(raffle);
+    }
+
 }
