@@ -1,14 +1,12 @@
-# Compiler files
-cache/
+# Layouts and bytecode
 out/
+cache/
 
-# Ignores development broadcast logs
-!/broadcast
-/broadcast/*/31337/
-/broadcast/**/dry-run/
-
-# Docs
-docs/
-
-# Dotenv file
+# Environment variables (CRITICAL)
 .env
+
+# Dependencies
+lib/
+
+# Broadcasts (Foundry logs your private key in these files sometimes!)
+broadcast/
